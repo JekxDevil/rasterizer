@@ -1,10 +1,12 @@
-<html>
+<!DOCTYPE html >
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <script src="gl-matrix-min.js"></script>
-    <script src="geometry.js"></script>
-    <script type="text/javascript">
+    <script src="cube.js"></script>
+    <script src="triangle.js"></script>
+    <script type="text/javascript" defer>
 
         // ----------------- Assignment ------------------
         // Modify the vertex and the fragment shaders such that:
@@ -35,39 +37,23 @@
                     out_color = vec4(v_color, 1.0);
                 }`;
 
-        // vertices of our traingle
-        var triangle_vertices = [
-            0.0, 0.5, 0.0,
-            -0.5, -0.5, 0.0,
-            0.5, -0.5, 0.0,
-        ];
-        
         //---------------- Assignment -------------------
         // Define color for each vertex of a triangle.
         // The vertices should have different colors, e.g., reg, green, blue.
-        // The colors within the triangle will be interpolated automaticaly.
+        // The colors within the triangle will be interpolated automatically.
         //----------------------------------------------
-        var triangle_colors = [
-            1, 0, 0,
-            0, 1, 0,
-            0, 0, 1,
-        ];
 
-        var is_cube = true;
-        if (is_cube) {
-            triangle_vertices = cube_vertices;
-            triangle_colors = cube_colors;
-            console.log(triangle_vertices)
-        }
+        let is_cube = false;
 
 
         var gl; // WebGL context
         var shaderProgram; // the GLSL program we will use for rendering
         var triangle_vao; // the vertex array object for the triangle
+        var cube_vao; // vertex array object for vao
 
-        // The function initilize the WebGL canvas
+        // The function initialize the WebGL canvas
         function initWebGL() {
-            var canvas = document.getElementById("webgl-canvas");
+            const canvas = document.getElementById("webgl-canvas");
             gl = canvas.getContext("webgl2");
 
             //keep the size of the canvas for leter rendering
@@ -137,8 +123,6 @@
             gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexBuffer);
             // copy the data from the CPU to the buffer (GPU)
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangle_vertices), gl.STATIC_DRAW);
-
-
             //------------- Assignment: Create a buffer for color --------------
             // In similar way (see above):
             // (1) create a buffer for color,
@@ -152,16 +136,15 @@
             // copy the data from the CPU to the buffer (GPU)
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangle_colors), gl.STATIC_DRAW);
 
-
             //----------------------------------------------------------------------------
             // At this point our vertices are already on the GPU.
             // We have to specify how the data will flow through the graphics pipeline.
-            // We do it by setting up the vertex array objects which sotre information about buffers and how the connect to attributes.
+            // We do it by setting up the vertex array objects
+            // which store information about buffers and how to connect to attributes.
             //----------------------------------------------------------------------------
 
             // create a vertex array object (VAO) to store information about buffers and attributes
             triangle_vao = gl.createVertexArray();
-            // bind the VAO
             gl.bindVertexArray(triangle_vao);
 
             //----------------------------------------------------------------------------
@@ -173,10 +156,8 @@
             var positionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
             // enable attribute for the positions
             gl.enableVertexAttribArray(positionAttributeLocation);
-            // bining the vertex buffer with positions to the correct attribute
+            // binding the vertex buffer with positions to the correct attribute
             gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-
-
             //--------- Assignment: Configure the attributes for color ----------
             // Similarly to the code above:
             // (1) bind the color buffer,
@@ -190,8 +171,26 @@
             var colorAttributeLocation = gl.getAttribLocation(shaderProgram, "a_color");
             // enable attribute for the positions
             gl.enableVertexAttribArray(colorAttributeLocation);
-            // bining the vertex buffer with positions to the correct attribute
+            // binding the vertex buffer with positions to the correct attribute
             gl.vertexAttribPointer(colorAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+
+
+            var cubeVertexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube_vertices), gl.STATIC_DRAW);
+            var cubeColorBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, cubeColorBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube_colors), gl.STATIC_DRAW);
+            cube_vao = gl.createVertexArray();
+            gl.bindVertexArray(cube_vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexBuffer);
+            var cubePositionAttributeLocation = gl.getAttribLocation(shaderProgram, "a_position");
+            gl.enableVertexAttribArray(cubePositionAttributeLocation);
+            gl.vertexAttribPointer(cubePositionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, cubeColorBuffer);
+            var cubeColorAttributeLocation = gl.getAttribLocation(shaderProgram, "a_color");
+            gl.enableVertexAttribArray(cubeColorAttributeLocation);
+            gl.vertexAttribPointer(cubeColorAttributeLocation, 3, gl.FLOAT, false, 0, 0);
         }
 
         function draw() {
@@ -214,7 +213,6 @@
             if (is_cube) {
                 gl.enable(gl.CULL_FACE);
                 gl.enable(gl.DEPTH_TEST);
-
             }
             //---------------------------------------------------
 
@@ -225,7 +223,11 @@
             gl.useProgram(shaderProgram);
             gl.uniformMatrix4fv(shaderProgram.rotationMatrix, false, rotationMatrix); // extra code for interactive rotation, it does need to be modified
             // bind the VAO (this restores the state from when we were creating the VAO)
-            gl.bindVertexArray(triangle_vao);
+            if (is_cube) {
+                gl.bindVertexArray(cube_vao);
+            } else {
+                gl.bindVertexArray(triangle_vao);
+            }
             // ------------------- Assignment -------------------
             // Remember to set the number of vertices correctly.
             // For the triangle it is 3, but how many for a cube?
@@ -237,10 +239,13 @@
                 gl.drawArrays(gl.TRIANGLES, 0, 3);
             }
 
-            window.requestAnimationFrame(function () { draw(); });
+            window.requestAnimationFrame(function () {
+                draw();
+            });
         }
+
         function start() {
-            // initialze WebGL
+            // initialize WebGL
             initWebGL();
             // create GLSL programs
             createGLSLPrograms();
@@ -250,16 +255,35 @@
             draw();
         }
 
+        function add_listener() {
+            console.log("Add listeners: wait for the DOM content to be fully loaded");
+            var colorRadios = document.getElementsByName('elem');
+            colorRadios.forEach(function (radio) {
+                console.log("Add a change event listener to each radio button")
+                radio.addEventListener('change', function () {
+                    console.log('Selected elem:', radio.value);
+                    get_elem();
+                });
+            });
+        }
+
+        function get_elem() {
+            is_cube = document.getElementById("cube").checked;
+        }
     </script>
+    <title>WebGL</title>
 </head>
 
-<body onload="start();">
-    <canvas id="webgl-canvas" width="768" height="768"></canvas>
-    <div style="float: right">
-        <div class="slidecontainer">
-            Rotation:</br><input type="range" min="0" max="200" value="100" id="rotation">
-        </div>
-    </div>
+<body onload="start(); get_elem(); add_listener();">
+<canvas id="webgl-canvas" width="768" height="768"></canvas>
+<div style="float: right">
+    <label for="rotation">Rotation:</label>
+    <input id="rotation" type="range" min="0" max="200" value="100"><br/>
+    <label for="triangle">Triangle</label>
+    <input id="triangle" type="radio" name="elem" value="triangle" checked><br/>
+    <label for="cube">Cube</label>
+    <input id="cube" type="radio" name="elem" value="cube"><br/>
+</div>
 </body>
 
 </html>
