@@ -100,33 +100,41 @@ var cube_colors = [
 var cube_normals = [];
 
 function compute_normals(vertices, normals) {
-    for (var i = 0; i < vertices.length; i += 9) {
-        var v1 = vec3.fromValues(vertices[i], vertices[i + 1], vertices[i + 2]);
-        var v2 = vec3.fromValues(vertices[i + 3], vertices[i + 4], vertices[i + 5]);
-        var v3 = vec3.fromValues(vertices[i + 6], vertices[i + 7], vertices[i + 8]);
 
-        var v1v2 = vec3.create();
-        var v1v3 = vec3.create();
+    for (let i = 0; i < vertices.length; i += 9) {
+        let p1 = i + 3;
+        let p2 = i + 6;
+        let p3 = i + 9;
 
-        vec3.subtract(v1v2, v2, v1);
-        vec3.subtract(v1v3, v3, v1);
+    let v1 = vec3.fromValues(...vertices.slice(i, p1));
+    let v2 = vec3.fromValues(...vertices.slice(p1, p2));
+    let v3 = vec3.fromValues(...vertices.slice(p2, p3));
 
-        var n = vec3.create();
-        vec3.cross(n, v1v2, v1v3);
-        vec3.normalize(n, n);
+    let v4 = vec3.create();
+    let v5 = vec3.create();
 
-        for (var j = 0; j < 3; j++) {
-            normals.push(n[0], n[1], n[2]);
-        }
-    }
+    let normal = vec3.create();
+
+    vec3.subtract(v4, v2, v1);
+    vec3.subtract(v5, v3, v1);
+
+    vec3.cross(normal, v4, v5);
+    vec3.normalize(normal, normal);
+
+    normals.push(normal[0], normal[1], normal[2]);
+    normals.push(normal[0], normal[1], normal[2]);
+    normals.push(normal[0], normal[1], normal[2]);
+  }
 }
 compute_normals(cube_vertices, cube_normals);
+
 
 //---------------------------
 // definition of the sphere
 //---------------------------
 var sphere_vertices = [];
 var sphere_colors = [];
+var sphere_normals = [];
 function create_sphere() {
     let step = 0.01;
     for (let u = 0; u < 1; u = u + step) {
@@ -161,6 +169,8 @@ function create_sphere() {
     //making the sphere a unit sphere
     for (let i = 0; i < sphere_vertices.length; i++) {
         sphere_vertices[i] = sphere_vertices[i] / 2;
+        sphere_normals[i] = sphere_vertices[i];
+
     }
 }
 
