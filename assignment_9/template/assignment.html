@@ -6,71 +6,71 @@
     <script src="geometry.js"></script>
     <script type="text/javascript">
 
-        const vertexShaderCode =
-            `#version 300 es
-                in vec3 a_position;
-                in vec3 a_color;
-                in vec3 a_normal;
+        let vertexShaderCode =
+`#version 300 es
 
-                out vec3 v_color;
-                out vec3 v_normal;
-                out vec3 v_viewDirection;
-                out vec3 v_lightDirection;
+in vec3 a_position;
+in vec3 a_color;
+in vec3 a_normal;
 
-
-                uniform vec3 lightDirection;
-                uniform mat4 modelMatrix;
-                uniform mat4 projectionMatrix;
-                uniform mat4 translationMatrix;
-                uniform vec3 viewDirection;
-                uniform mat4 viewMatrix;
+out vec3 v_color;
+out vec3 v_normal;
+out vec3 v_viewDirection;
+out vec3 v_lightDirection;
 
 
+uniform vec3 lightDirection;
+uniform mat4 modelMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 translationMatrix;
+uniform vec3 viewDirection;
+uniform mat4 viewMatrix;
 
-                void main(){
-                    v_color = a_color;
-                    v_normal = vec3(viewMatrix * modelMatrix * vec4(a_normal, 0.0));
 
 
-                    v_viewDirection = vec3(projectionMatrix * vec4(0.0, 0.0, -1.0, 0.0));
-                    v_lightDirection = vec3(viewMatrix * vec4(lightDirection, 0.0));
+void main() {
+    v_color = a_color;
+    v_normal = vec3(viewMatrix * modelMatrix * vec4(a_normal, 0.0));
 
-                    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(a_position,1.0);
 
-                }`;
+    v_viewDirection = vec3(projectionMatrix * vec4(0.0, 0.0, -1.0, 0.0));
+    v_lightDirection = vec3(viewMatrix * vec4(lightDirection, 0.0));
 
-        const fragmentShaderCode =
-            `#version 300 es
-                precision mediump float;
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(a_position, 1.0);
 
-                in vec3 v_color;
-                in vec3 v_normal;
-                in vec3 v_viewDirection;
-                in vec3 v_lightDirection;
+}`;
 
-                const vec3 ambientCoefficient = vec3(0.1);
-                const vec3 diffuseCoefficient = vec3(0.5);
-                const vec3 specularCoefficient = vec3(0.5);
-                const float shininess = 80.0;
+        let fragmentShaderCode =
+`#version 300 es
+precision mediump float;
 
-                out vec4 out_color;
+in vec3 v_color;
+in vec3 v_normal;
+in vec3 v_viewDirection;
+in vec3 v_lightDirection;
 
-                void main(){
-                    vec3 normal = normalize(v_normal);
-                    vec3 viewDirection = normalize(v_viewDirection);
-                    vec3 lightDirection = normalize(v_lightDirection);
-                    vec3 reflectedDirection = normalize(reflect(-lightDirection, normal));
+const vec3 ambientCoefficient = vec3(0.1);
+const vec3 diffuseCoefficient = vec3(0.5);
+const vec3 specularCoefficient = vec3(0.5);
+const float shininess = 80.0;
 
-                    vec3 ambient = ambientCoefficient;
-                    vec3 diffuse = diffuseCoefficient * clamp(dot(lightDirection, normal), 0.0, 1.0);
-                    vec3 specular = specularCoefficient * pow(clamp(dot(reflectedDirection, viewDirection), 0.0, 1.0), shininess);
-                    vec3 color = v_color * (ambient + diffuse + specular);
+out vec4 out_color;
 
-                    vec3 gamma_correction = pow(color, vec3(1.0 / 1.8));
+void main() {
+    vec3 normal = normalize(v_normal);
+    vec3 viewDirection = normalize(v_viewDirection);
+    vec3 lightDirection = normalize(v_lightDirection);
+    vec3 reflectedDirection = normalize(reflect(-lightDirection, normal));
 
-                    out_color = vec4(gamma_correction, 1.0);
-                }`;
+    vec3 ambient = ambientCoefficient;
+    vec3 diffuse = diffuseCoefficient * clamp(dot(lightDirection, normal), 0.0, 1.0);
+    vec3 specular = specularCoefficient * pow(clamp(dot(reflectedDirection, viewDirection), 0.0, 1.0), shininess);
+    vec3 color = v_color * (ambient + diffuse + specular);
 
+    vec3 gamma_correction = pow(color, vec3(1.0 / 1.8));
+
+    out_color = vec4(gamma_correction, 1.0);
+}`;
 
         let gl; // WebGL context
         let shaderProgram; // the GLSL program we will use for rendering
@@ -81,6 +81,11 @@
 
         // The function initialize the WebGL canvas
         function initWebGL() {
+            // need to enable live server, since afraid of complex correction of assignment, just left here for next one
+            // separation into files useful to have syntax highlight and features of IDEs. need to convert to async func
+            // vertexShaderCode = await (await fetch('shader/vertex.glsl')).text();
+            // fragmentShaderCode = await (await fetch('shader/fragment.glsl')).text();
+
             const canvas = document.getElementById("webgl-canvas");
             gl = canvas.getContext("webgl2");
             //keep the size of the canvas for later rendering
@@ -253,9 +258,7 @@
             gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(0, 0, 0)));
             gl.drawArrays(gl.TRIANGLES, 0, sphere_vertices.length / 3);
 
-            window.requestAnimationFrame(function () {
-                draw();
-            });
+            window.requestAnimationFrame(() => draw());
         }
 
         function start() {
