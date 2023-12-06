@@ -9,65 +9,59 @@
         let vertexShaderCode =
 `#version 300 es
 
-in vec3 a_position;
-in vec3 a_color;
-in vec3 a_normal;
+in vec3 position;
+in vec3 color;
+in vec3 normal;
 
-out vec3 v_color;
-out vec3 v_normal;
-out vec3 v_viewDirection;
-out vec3 v_lightDirection;
+out vec3 frag_color;
+out vec3 frag_normal;
+out vec3 frag_view_direction;
+out vec3 frag_light_direction;
 
-
-uniform vec3 lightDirection;
+uniform vec3 light_direction;
 uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 translationMatrix;
 uniform vec3 viewDirection;
 uniform mat4 viewMatrix;
 
-
-
 void main() {
-    v_color = a_color;
-    v_normal = vec3(viewMatrix * modelMatrix * vec4(a_normal, 0.0));
-
-
-    v_viewDirection = vec3(projectionMatrix * vec4(0.0, 0.0, -1.0, 0.0));
-    v_lightDirection = vec3(viewMatrix * vec4(lightDirection, 0.0));
-
-    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(a_position, 1.0);
-
+    frag_view_direction = vec3(projectionMatrix * vec4(0.0, 0.0, -1.0, 0.0));
+    frag_light_direction = vec3(viewMatrix * vec4(light_direction, 0.0));
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+    frag_normal = vec3(viewMatrix * modelMatrix * vec4(normal, 0.0));
+    frag_color = color;
 }`;
 
         let fragmentShaderCode =
 `#version 300 es
+
 precision mediump float;
 
-in vec3 v_color;
-in vec3 v_normal;
-in vec3 v_viewDirection;
-in vec3 v_lightDirection;
+in vec3 frag_color;
+in vec3 frag_normal;
+in vec3 frag_view_direction;
+in vec3 frag_light_direction;
 
-const vec3 ambientCoefficient = vec3(0.1);
-const vec3 diffuseCoefficient = vec3(0.5);
-const vec3 specularCoefficient = vec3(0.5);
+const vec3 ambient_coeff = vec3(0.1);
+const vec3 diffuse_coeff = vec3(0.5);
+const vec3 specular_coeff = vec3(0.5);
 const float shininess = 80.0;
 
 out vec4 out_color;
 
 void main() {
-    vec3 normal = normalize(v_normal);
-    vec3 viewDirection = normalize(v_viewDirection);
-    vec3 lightDirection = normalize(v_lightDirection);
-    vec3 reflectedDirection = normalize(reflect(-lightDirection, normal));
+    vec3 normal = normalize(frag_normal);
+    vec3 view_direction = normalize(frag_view_direction);
+    vec3 light_direction = normalize(frag_light_direction);
+    vec3 reflected_direction = normalize(reflect(-light_direction, normal));
 
-    vec3 ambient = ambientCoefficient;
-    vec3 diffuse = diffuseCoefficient * clamp(dot(lightDirection, normal), 0.0, 1.0);
-    vec3 specular = specularCoefficient * pow(clamp(dot(reflectedDirection, viewDirection), 0.0, 1.0), shininess);
-    vec3 color = v_color * (ambient + diffuse + specular);
+    vec3 ambient = ambient_coeff;
+    vec3 diffuse = diffuse_coeff * clamp(dot(light_direction, normal), 0.0, 1.0);
+    vec3 specular = specular_coeff * pow(clamp(dot(reflected_direction, view_direction), 0.0, 1.0), shininess);
+    vec3 color_raw = frag_color * (ambient + diffuse + specular);
 
-    vec3 gamma_correction = pow(color, vec3(1.0 / 1.8));
+    vec3 gamma_correction = pow(color_raw, vec3(1.0 / 1.8));
 
     out_color = vec4(gamma_correction, 1.0);
 }`;
@@ -154,9 +148,9 @@ void main() {
         }
 
         function createVAO(vao, vertices, colors, normals) {
-            allocateVAO(vao, vertices, "a_position");
-            allocateVAO(vao, colors, "a_color");
-            allocateVAO(vao, normals, "a_normal");
+            allocateVAO(vao, vertices, "position");
+            allocateVAO(vao, colors, "color");
+            allocateVAO(vao, normals, "normal");
         }
 
         function initBuffers() {
@@ -209,7 +203,7 @@ void main() {
             let modelMatrixLocation = gl.getUniformLocation(shaderProgram, "modelMatrix");
             let viewMatrixLocation = gl.getUniformLocation(shaderProgram, "viewMatrix");
             let projectionMatrixLocation = gl.getUniformLocation(shaderProgram, "projectionMatrix");
-            let lightDirectionLocation = gl.getUniformLocation(shaderProgram, "lightDirection");
+            let lightDirectionLocation = gl.getUniformLocation(shaderProgram, "light_direction");
 
             let projectionMatrix = mat4.create();
             mat4.perspective(projectionMatrix, camera_fov, gl.viewportWidth / gl.viewportHeight, 0.01, 50);
