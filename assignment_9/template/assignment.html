@@ -74,21 +74,18 @@
 
         let gl; // WebGL context
         let shaderProgram; // the GLSL program we will use for rendering
-
-        let cube_vao; // the vertex array object for the cube
-        let plane_vao; // the vertex array object for the plane
-        let sphere_vao; // the vertex array object for the plane
+        let cube_vao; // vertex array object for cube
+        let plane_vao; // vertex array object for plane
+        let sphere_vao; // vertex array object for sphere
 
 
         // The function initialize the WebGL canvas
         function initWebGL() {
             const canvas = document.getElementById("webgl-canvas");
             gl = canvas.getContext("webgl2");
-
             //keep the size of the canvas for later rendering
             gl.viewportWidth = canvas.width;
             gl.viewportHeight = canvas.height;
-
             //check for errors
             if (gl) {
                 console.log("WebGL successfully initialized.");
@@ -104,7 +101,7 @@
             // compile the shader
             gl.compileShader(shader);
             // check for success and errors
-            let success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+            const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
             if (success) {
                 console.log(name + " shader compiled successfully.");
             } else {
@@ -140,46 +137,30 @@
             linkProgram(shaderProgram, vertexShader, fragmentShader);
         }
 
-        function createVAO(vao, shader, vertices, colors, normals) {
-            let vertexBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-
-            let colorBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-
-            let normalBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-
+        const allocateVAO = (vao, entity, shader_entity_var) => {
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(entity), gl.STATIC_DRAW);
             gl.bindVertexArray(vao);
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            const attributeLocation = gl.getAttribLocation(shaderProgram, shader_entity_var);
+            gl.enableVertexAttribArray(attributeLocation);
+            gl.vertexAttribPointer(attributeLocation, 3, gl.FLOAT, false, 0, 0);
+        }
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-            let positionAttributeLocation = gl.getAttribLocation(shader, "a_position");
-            gl.enableVertexAttribArray(positionAttributeLocation);
-            gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-            let colorAttributeLocation = gl.getAttribLocation(shader, "a_color");
-            gl.enableVertexAttribArray(colorAttributeLocation);
-            gl.vertexAttribPointer(colorAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-            let normalAttributeLocation = gl.getAttribLocation(shader, "a_normal");
-            gl.enableVertexAttribArray(normalAttributeLocation);
-            gl.vertexAttribPointer(normalAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+        function createVAO(vao, vertices, colors, normals) {
+            allocateVAO(vao, vertices, "a_position");
+            allocateVAO(vao, colors, "a_color");
+            allocateVAO(vao, normals, "a_normal");
         }
 
         function initBuffers() {
             cube_vao = gl.createVertexArray();
-            createVAO(cube_vao, shaderProgram, cube_vertices, cube_colors, cube_normals);
-
             plane_vao = gl.createVertexArray();
-            createVAO(plane_vao, shaderProgram, plane_vertices, plane_colors, plane_normals);
-
             sphere_vao = gl.createVertexArray();
-            createVAO(sphere_vao, shaderProgram, sphere_vertices, sphere_colors, sphere_normals);
+            createVAO(cube_vao, cube_vertices, cube_colors, cube_normals);
+            createVAO(plane_vao, plane_vertices, plane_colors, plane_normals);
+            createVAO(sphere_vao, sphere_vertices, sphere_colors, sphere_normals);
         }
 
         function draw() {
@@ -216,7 +197,6 @@
             // - Before drawing anything using the program you still have to set values of all uniforms.
             // - As long as you use the same shader program you do not need to set all uniforms everytime you draw new object. The programs remembers the uniforms after calling gl.drawArrays
             // - The same, if you draw the same object, e.g., cube, multiple times, you do not need to bind the corresponding VAO everytime you draw.
-
 
 
             // Set uniforms
@@ -262,7 +242,7 @@
             let planeModelMatrix = mat4.create();
 
             mat4.fromTranslation(planeModelMatrix, vec3.fromValues(0, -0.5, 0));
-            
+
             gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.multiply(planeModelMatrix, planeModelMatrix, planeScaleMatrix));
             gl.drawArrays(gl.TRIANGLES, 0, plane_vertices.length / 3);
 
@@ -273,8 +253,11 @@
             gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(0, 0, 0)));
             gl.drawArrays(gl.TRIANGLES, 0, sphere_vertices.length / 3);
 
-            window.requestAnimationFrame(function () { draw(); });
+            window.requestAnimationFrame(function () {
+                draw();
+            });
         }
+
         function start() {
             // initialize WebGL
             initWebGL();
@@ -290,30 +273,30 @@
 </head>
 
 <body onload="start();">
-    <canvas id="webgl-canvas" width="768" height="768"></canvas>
-    <div style="float: right">
-        <h4>Camera:</h4>
-        <div class="slidecontainer">
-            Azimuthal angle:</br><input type="range" min="-270" max="90" value="-45" id="camera_azimuthal_angle">
-        </div>
-        <div class="slidecontainer">
-            Polar angle:</br><input type="range" min="1" max="179" value="60" id="camera_polar_angle">
-        </div>
-        <div class="slidecontainer">
-            Distance:</br><input type="range" min="20" max="200" value="50" id="camera_distance">
-        </div>
-        <div class="slidecontainer">
-            Field of view:</br><input type="range" min="10" max="150" value="45" id="camera_fov">
-        </div>
-
-        <h4>Light:</h4>
-        <div class="slidecontainer">
-            Azimuthal angle:</br><input type="range" min="-270" max="90" value="-70" id="light_azimuthal_angle">
-        </div>
-        <div class="slidecontainer">
-            Polar angle:</br><input type="range" min="1" max="90" value="60" id="light_polar_angle">
-        </div>
+<canvas id="webgl-canvas" width="768" height="768"></canvas>
+<div style="float: right">
+    <h4>Camera:</h4>
+    <div class="slidecontainer">
+        Azimuthal angle:</br><input type="range" min="-270" max="90" value="-45" id="camera_azimuthal_angle">
     </div>
+    <div class="slidecontainer">
+        Polar angle:</br><input type="range" min="1" max="179" value="60" id="camera_polar_angle">
+    </div>
+    <div class="slidecontainer">
+        Distance:</br><input type="range" min="20" max="200" value="50" id="camera_distance">
+    </div>
+    <div class="slidecontainer">
+        Field of view:</br><input type="range" min="10" max="150" value="45" id="camera_fov">
+    </div>
+
+    <h4>Light:</h4>
+    <div class="slidecontainer">
+        Azimuthal angle:</br><input type="range" min="-270" max="90" value="-70" id="light_azimuthal_angle">
+    </div>
+    <div class="slidecontainer">
+        Polar angle:</br><input type="range" min="1" max="90" value="60" id="light_polar_angle">
+    </div>
+</div>
 </body>
 
 </html>
