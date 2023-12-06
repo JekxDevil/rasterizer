@@ -1,5 +1,6 @@
 // definition of a plane
-const plane_vertices = [
+const plane = { vertices: [], colors: [], normals: []};
+plane.vertices = [
     -0.5, 0.0, -0.5,
     -0.5, 0.0, 0.5,
     0.5, 0.0, 0.5,
@@ -7,7 +8,7 @@ const plane_vertices = [
     0.5, 0.0, 0.5,
     0.5, 0.0, -0.5,
 ];
-const plane_normals = [
+plane.normals = [
     0.0, 1.0, 0.0,
     0.0, 1.0, 0.0,
     0.0, 1.0, 0.0,
@@ -16,7 +17,7 @@ const plane_normals = [
     0.0, 1.0, 0.0,
 ];
 
-const plane_colors = [
+plane.colors = [
     0.56, 0.45, 0.4,
     0.56, 0.45, 0.4,
     0.56, 0.45, 0.4,
@@ -28,92 +29,103 @@ const plane_colors = [
 //---------------------------
 // definition of the cube
 //---------------------------
-const cube_vertices = [
-    // Front face
-    -0.5, 0.5, 0.5,
-    -0.5, -0.5, 0.5,
-    0.5, -0.5, 0.5,
-    -0.5, 0.5, 0.5,
-    0.5, -0.5, 0.5,
-    0.5, 0.5, 0.5,
+const cube = { vertices: [], colors: [], normals: []};
 
-    // Back face
-    0.5, -0.5, -0.5,
-    -0.5, -0.5, -0.5,
-    -0.5, 0.5, -0.5,
-    0.5, 0.5, -0.5,
-    0.5, -0.5, -0.5,
-    -0.5, 0.5, -0.5,
+const cube_vertices_builder = (size) => {
+    const halfSize = size / 2;
 
-    // Top face
-    -0.5, 0.5, 0.5,
-    0.5, 0.5, -0.5,
-    -0.5, 0.5, -0.5,
-    -0.5, 0.5, 0.5,
-    0.5, 0.5, 0.5,
-    0.5, 0.5, -0.5,
+    const frontFace = [
+        -halfSize,  halfSize,  halfSize,
+        -halfSize, -halfSize,  halfSize,
+        halfSize, -halfSize,  halfSize,
+        -halfSize,  halfSize,  halfSize,
+        halfSize, -halfSize,  halfSize,
+        halfSize,  halfSize,  halfSize,
+    ];
 
-    // Bottom face
-    -0.5, -0.5, 0.5,
-    -0.5, -0.5, -0.5,
-    0.5, -0.5, -0.5,
-    -0.5, -0.5, 0.5,
-    0.5,-0.5, -0.5,
-    0.5, -0.5, 0.5,
+    const backFace = [
+        halfSize, -halfSize, -halfSize,
+        -halfSize, -halfSize, -halfSize,
+        -halfSize,  halfSize, -halfSize,
+        halfSize,  halfSize, -halfSize,
+        halfSize, -halfSize, -halfSize,
+        -halfSize,  halfSize, -halfSize,
+    ];
 
-    // Right face
-    0.5, -0.5, 0.5,
-    0.5, -0.5, -0.5,
-    0.5, 0.5, -0.5,
-    0.5, 0.5, 0.5,
-    0.5, -0.5, 0.5,
-    0.5, 0.5, -0.5,
+    const topFace = [
+        -halfSize,  halfSize,  halfSize,
+        halfSize,  halfSize, -halfSize,
+        -halfSize,  halfSize, -halfSize,
+        -halfSize,  halfSize,  halfSize,
+        halfSize,  halfSize,  halfSize,
+        halfSize,  halfSize, -halfSize,
+    ];
 
-    // Left face
-    -0.5, 0.5, -0.5,
-    -0.5, -0.5, -0.5,
-    -0.5, -0.5, 0.5,
-    -0.5, 0.5, -0.5,
-    -0.5, -0.5, 0.5,
-    -0.5, 0.5, 0.5,
+    const bottomFace = [
+        -halfSize, -halfSize,  halfSize,
+        -halfSize, -halfSize, -halfSize,
+        halfSize, -halfSize, -halfSize,
+        -halfSize, -halfSize,  halfSize,
+        halfSize, -halfSize, -halfSize,
+        halfSize, -halfSize,  halfSize,
+    ];
+
+    const rightFace = [
+        halfSize, -halfSize,  halfSize,
+        halfSize, -halfSize, -halfSize,
+        halfSize,  halfSize, -halfSize,
+        halfSize,  halfSize,  halfSize,
+        halfSize, -halfSize,  halfSize,
+        halfSize,  halfSize, -halfSize,
+    ];
+
+    const leftFace = [
+        -halfSize,  halfSize, -halfSize,
+        -halfSize, -halfSize, -halfSize,
+        -halfSize, -halfSize,  halfSize,
+        -halfSize,  halfSize, -halfSize,
+        -halfSize, -halfSize,  halfSize,
+        -halfSize,  halfSize,  halfSize,
+    ];
+
+    return [
+        ...frontFace,
+        ...backFace,
+        ...topFace,
+        ...bottomFace,
+        ...rightFace,
+        ...leftFace,
+    ];
+}
+cube.vertices = cube_vertices_builder(1.0);
+
+const cube_color_builder = (color, count) =>
+    Array(count).fill(color).flat();
+
+cube.colors = [
+    ...cube_color_builder([1, 0, 0], 6),    // Front face
+    ...cube_color_builder([1, 0, 0], 6),    // Back face
+    ...cube_color_builder([0, 1, 0], 6),    // Top face
+    ...cube_color_builder([0, 1, 0], 6),    // Bottom face
+    ...cube_color_builder([0, 0, 1], 6),    // Left face
+    ...cube_color_builder([0, 0, 1], 6),    // Right face
 ];
 
+const compute_normals = (cube) => {
 
-const cube_colors = [
-    // Front face
-    ...Array(6).fill([1, 0, 0,]).flat(),
-    // Back face
-    ...Array(6).fill([1, 0, 0,]).flat(),
+    for (let i = 0; i < cube.vertices.length; i += 9) {
+        const p1 = i + 3;
+        const p2 = i + 6;
+        const p3 = i + 9;
 
-    // Top face
-    ...Array(6).fill([0, 1, 0,]).flat(),
-    // Bottom face
-    ...Array(6).fill([0, 1, 0,]).flat(),
+    const v1 = vec3.fromValues(...cube.vertices.slice(i, p1));
+    const v2 = vec3.fromValues(...cube.vertices.slice(p1, p2));
+    const v3 = vec3.fromValues(...cube.vertices.slice(p2, p3));
 
-    // Left face
-    ...Array(6).fill([0, 0, 1,]).flat(),
-    // Right face
-    ...Array(6).fill([0, 0, 1,]).flat(),
+    const v4 = vec3.create();
+    const v5 = vec3.create();
 
-];
-
-const cube_normals = [];
-
-function compute_normals(vertices, normals) {
-
-    for (let i = 0; i < vertices.length; i += 9) {
-        let p1 = i + 3;
-        let p2 = i + 6;
-        let p3 = i + 9;
-
-    let v1 = vec3.fromValues(...vertices.slice(i, p1));
-    let v2 = vec3.fromValues(...vertices.slice(p1, p2));
-    let v3 = vec3.fromValues(...vertices.slice(p2, p3));
-
-    let v4 = vec3.create();
-    let v5 = vec3.create();
-
-    let normal = vec3.create();
+    const normal = vec3.create();
 
     vec3.subtract(v4, v2, v1);
     vec3.subtract(v5, v3, v1);
@@ -121,58 +133,57 @@ function compute_normals(vertices, normals) {
     vec3.cross(normal, v4, v5);
     vec3.normalize(normal, normal);
 
-    normals.push(normal[0], normal[1], normal[2]);
-    normals.push(normal[0], normal[1], normal[2]);
-    normals.push(normal[0], normal[1], normal[2]);
+    cube.normals.push(normal[0], normal[1], normal[2]);
+    cube.normals.push(normal[0], normal[1], normal[2]);
+    cube.normals.push(normal[0], normal[1], normal[2]);
   }
 }
-compute_normals(cube_vertices, cube_normals);
+compute_normals(cube);
 
 
 //---------------------------
 // definition of the sphere
 //---------------------------
-const sphere_vertices = [];
-const sphere_colors = [];
-const sphere_normals = [];
+const sphere = { vertices: [], colors: [], normals: []};
 
-function create_sphere() {
-    let step = 0.01;
-    for (let u = 0; u < 1; u = u + step) {
-        for (let v = 0; v < 1; v = v + step) {
-            let t = Math.sin(Math.PI * v);
+const sphere_builder = () => {
+    const step = 0.01;
 
-            let x1 = t * Math.cos(2 * Math.PI * u);
-            let z1 = t * Math.sin(2 * Math.PI * u);
-            let y1 = Math.cos(Math.PI * v);
+    for (let u = 0; u < 1; u += step) {
+        for (let v = 0; v < 1; v += step) {
+            const t = Math.sin(Math.PI * v);
 
-            let x4 = t * Math.cos(2 * Math.PI * (u + step));
-            let z4 = t * Math.sin(2 * Math.PI * (u + step));
-            let y4 = Math.cos(Math.PI * v);
+            const x1 = t * Math.cos(2 * Math.PI * u);
+            const z1 = t * Math.sin(2 * Math.PI * u);
+            const y1 = Math.cos(Math.PI * v);
 
-            t = Math.sin(Math.PI * (v + step));
-            let x2 = t * Math.cos(2 * Math.PI * u);
-            let z2 = t * Math.sin(2 * Math.PI * u);
-            let y2 = Math.cos(Math.PI * (v + step));
+            const x4 = t * Math.cos(2 * Math.PI * (u + step));
+            const z4 = t * Math.sin(2 * Math.PI * (u + step));
+            const y4 = Math.cos(Math.PI * v);
 
-            let x3 = t * Math.cos(2 * Math.PI * (u + step));
-            let z3 = t * Math.sin(2 * Math.PI * (u + step));
-            let y3 = Math.cos(Math.PI * (v + step));
+            const t1 = Math.sin(Math.PI * (v + step));
+            const x2 = t1 * Math.cos(2 * Math.PI * u);
+            const z2 = t1 * Math.sin(2 * Math.PI * u);
+            const y2 = Math.cos(Math.PI * (v + step));
 
-            sphere_vertices.push(x1, y1, z1, x3, y3, z3, x2, y2, z2);
-            sphere_vertices.push(x1, y1, z1, x4, y4, z4, x3, y3, z3);
+            const x3 = t1 * Math.cos(2 * Math.PI * (u + step));
+            const z3 = t1 * Math.sin(2 * Math.PI * (u + step));
+            const y3 = Math.cos(Math.PI * (v + step));
+
+            sphere.vertices.push(x1, y1, z1, x3, y3, z3, x2, y2, z2);
+            sphere.vertices.push(x1, y1, z1, x4, y4, z4, x3, y3, z3);
 
             for (let k = 0; k < 6; k++) {
-                sphere_colors.push(1, 1, 1);
+                sphere.colors.push(1, 1, 1);
             }
         }
     }
-    //making the sphere a unit sphere
-    for (let i = 0; i < sphere_vertices.length; i++) {
-        sphere_vertices[i] = sphere_vertices[i] / 2;
-        sphere_normals[i] = sphere_vertices[i];
 
+    // Making the sphere a unit sphere
+    for (let i = 0; i < sphere.vertices.length; i++) {
+        sphere.vertices[i] /= 2;
+        sphere.normals[i] = sphere.vertices[i];
     }
-}
+};
 
-create_sphere();
+sphere_builder();

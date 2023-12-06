@@ -79,7 +79,6 @@ void main() {
             // separation into files useful to have syntax highlight and features of IDEs. need to convert to async func
             // vertexShaderCode = await (await fetch('shader/vertex.glsl')).text();
             // fragmentShaderCode = await (await fetch('shader/fragment.glsl')).text();
-
             const canvas = document.getElementById("webgl-canvas");
             gl = canvas.getContext("webgl2");
             //keep the size of the canvas for later rendering
@@ -157,31 +156,30 @@ void main() {
             cube_vao = gl.createVertexArray();
             plane_vao = gl.createVertexArray();
             sphere_vao = gl.createVertexArray();
-            createVAO(cube_vao, cube_vertices, cube_colors, cube_normals);
-            createVAO(plane_vao, plane_vertices, plane_colors, plane_normals);
-            createVAO(sphere_vao, sphere_vertices, sphere_colors, sphere_normals);
+            createVAO(cube_vao, cube.vertices, cube.colors, cube.normals);
+            createVAO(plane_vao, plane.vertices, plane.colors, plane.normals);
+            createVAO(sphere_vao, sphere.vertices, sphere.colors, sphere.normals);
         }
 
         function draw() {
             // input variables for controlling camera and light parameters
             // feel free to use these or create your own
-            let camera_azimuthal_angle = document.getElementById("camera_azimuthal_angle").value / 360 * 2 * Math.PI;
-            let camera_polar_angle = document.getElementById("camera_polar_angle").value / 360 * 2 * Math.PI;
-            let camera_distance = document.getElementById("camera_distance").value / 10;
-            let camera_fov = document.getElementById("camera_fov").value / 360 * 2 * Math.PI;
-            let light_azimuthal_angle = document.getElementById("light_azimuthal_angle").value / 360 * 2 * Math.PI;
-            let light_polar_angle = document.getElementById("light_polar_angle").value / 360 * 2 * Math.PI;
+            const camera_azimuthal_angle = document.getElementById("camera_azimuthal_angle").value / 360 * 2 * Math.PI;
+            const camera_polar_angle = document.getElementById("camera_polar_angle").value / 360 * 2 * Math.PI;
+            const camera_distance = document.getElementById("camera_distance").value / 10;
+            const camera_fov = document.getElementById("camera_fov").value / 360 * 2 * Math.PI;
+            const light_azimuthal_angle = document.getElementById("light_azimuthal_angle").value / 360 * 2 * Math.PI;
+            const light_polar_angle = document.getElementById("light_polar_angle").value / 360 * 2 * Math.PI;
 
-            let camera_x = camera_distance * Math.cos(camera_azimuthal_angle) * Math.sin(camera_polar_angle);
-            let camera_y = camera_distance * Math.cos(camera_polar_angle);
-            let camera_z = camera_distance * Math.sin(camera_azimuthal_angle) * Math.sin(camera_polar_angle);
-            let camera_position = vec3.fromValues(camera_x, camera_y, camera_z);
+            const camera_x = camera_distance * Math.cos(camera_azimuthal_angle) * Math.sin(camera_polar_angle);
+            const camera_y = camera_distance * Math.cos(camera_polar_angle);
+            const camera_z = camera_distance * Math.sin(camera_azimuthal_angle) * Math.sin(camera_polar_angle);
+            const camera_position = vec3.fromValues(camera_x, camera_y, camera_z);
 
-            let light_x = Math.sin(light_azimuthal_angle) * Math.sin(light_polar_angle);
-            let light_y = Math.cos(light_polar_angle);
-            let light_z = Math.cos(light_azimuthal_angle) * Math.sin(light_polar_angle);
-            let lightDirection = vec3.fromValues(light_x, light_y, light_z);
-
+            const light_x = Math.sin(light_azimuthal_angle) * Math.sin(light_polar_angle);
+            const light_y = Math.cos(light_polar_angle);
+            const light_z = Math.cos(light_azimuthal_angle) * Math.sin(light_polar_angle);
+            const lightDirection = vec3.fromValues(light_x, light_y, light_z);
 
             gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
             gl.clearColor(0.2, 0.2, 0.2, 1.0);
@@ -191,7 +189,6 @@ void main() {
 
             // enable the GLSL program for the rendering
             gl.useProgram(shaderProgram);
-
             // Tips for drawing:
             // - Before drawing anything using the program you still have to set values of all uniforms.
             // - As long as you use the same shader program you do not need to set all uniforms everytime you draw new object. The programs remembers the uniforms after calling gl.drawArrays
@@ -199,18 +196,15 @@ void main() {
 
 
             // Set uniforms
+            const modelMatrixLocation = gl.getUniformLocation(shaderProgram, "modelMatrix");
+            const viewMatrixLocation = gl.getUniformLocation(shaderProgram, "viewMatrix");
+            const projectionMatrixLocation = gl.getUniformLocation(shaderProgram, "projectionMatrix");
+            const lightDirectionLocation = gl.getUniformLocation(shaderProgram, "light_direction");
+            const projectionMatrix = mat4.create();
 
-            let modelMatrixLocation = gl.getUniformLocation(shaderProgram, "modelMatrix");
-            let viewMatrixLocation = gl.getUniformLocation(shaderProgram, "viewMatrix");
-            let projectionMatrixLocation = gl.getUniformLocation(shaderProgram, "projectionMatrix");
-            let lightDirectionLocation = gl.getUniformLocation(shaderProgram, "light_direction");
-
-            let projectionMatrix = mat4.create();
             mat4.perspective(projectionMatrix, camera_fov, gl.viewportWidth / gl.viewportHeight, 0.01, 50);
-
-            let viewMatrix = mat4.create();
+            const viewMatrix = mat4.create();
             mat4.lookAt(viewMatrix, camera_position, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
-
             let modelMatrix = mat4.create();
             modelMatrix = mat4.scale(mat4.create(), mat4.create(), vec3.fromValues(0.1, 0.1, 0.1));
             modelMatrix = mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(0, 3.0, 0));
@@ -220,37 +214,27 @@ void main() {
             gl.uniform3fv(lightDirectionLocation, lightDirection);
 
 
-            // ------------------------
-
-            // Drawing cube
+            // Drawing cubes
             gl.bindVertexArray(cube_vao);
             gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(-1.5, 0, 0)));
-            gl.drawArrays(gl.TRIANGLES, 0, cube_vertices.length / 3);
-
+            gl.drawArrays(gl.TRIANGLES, 0, cube.vertices.length / 3);
             gl.bindVertexArray(cube_vao);
             gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(1.5, 0, 0)));
-            gl.drawArrays(gl.TRIANGLES, 0, cube_vertices.length / 3);
-
-            // ------------------------
+            gl.drawArrays(gl.TRIANGLES, 0, cube.vertices.length / 3);
 
             // Drawing plane
             gl.bindVertexArray(plane_vao);
-
             let planeScaleMatrix = mat4.create();
             mat4.scale(planeScaleMatrix, planeScaleMatrix, vec3.fromValues(5.0, 5.0, 5.0));
             let planeModelMatrix = mat4.create();
-
             mat4.fromTranslation(planeModelMatrix, vec3.fromValues(0, -0.5, 0));
-
             gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.multiply(planeModelMatrix, planeModelMatrix, planeScaleMatrix));
-            gl.drawArrays(gl.TRIANGLES, 0, plane_vertices.length / 3);
+            gl.drawArrays(gl.TRIANGLES, 0, plane.vertices.length / 3);
 
-
-            // ------------------------
             // Drawing sphere
             gl.bindVertexArray(sphere_vao);
             gl.uniformMatrix4fv(modelMatrixLocation, false, mat4.fromTranslation(mat4.create(), vec3.fromValues(0, 0, 0)));
-            gl.drawArrays(gl.TRIANGLES, 0, sphere_vertices.length / 3);
+            gl.drawArrays(gl.TRIANGLES, 0, sphere.vertices.length / 3);
 
             window.requestAnimationFrame(() => draw());
         }
@@ -265,7 +249,6 @@ void main() {
             // draw
             draw();
         }
-
     </script>
 </head>
 
