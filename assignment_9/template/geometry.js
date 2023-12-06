@@ -1,5 +1,5 @@
 // definition of a plane
-var plane_vertices = [
+const plane_vertices = [
     -0.5, 0.0, -0.5,
     -0.5, 0.0, 0.5,
     0.5, 0.0, 0.5,
@@ -7,7 +7,7 @@ var plane_vertices = [
     0.5, 0.0, 0.5,
     0.5, 0.0, -0.5,
 ];
-var plane_normals = [
+const plane_normals = [
     0.0, 1.0, 0.0,
     0.0, 1.0, 0.0,
     0.0, 1.0, 0.0,
@@ -16,7 +16,7 @@ var plane_normals = [
     0.0, 1.0, 0.0,
 ];
 
-var plane_colors = [
+const plane_colors = [
     0.56, 0.45, 0.4,
     0.56, 0.45, 0.4,
     0.56, 0.45, 0.4,
@@ -79,7 +79,7 @@ const cube_vertices = [
 ];
 
 
-var cube_colors = [
+const cube_colors = [
     // Front face
     ...Array(6).fill([1, 0, 0,]).flat(),
     // Back face
@@ -87,17 +87,17 @@ var cube_colors = [
 
     // Top face
     ...Array(6).fill([0, 1, 0,]).flat(),
-     // Bottom face 
+    // Bottom face
     ...Array(6).fill([0, 1, 0,]).flat(),
 
-     // Left face
+    // Left face
     ...Array(6).fill([0, 0, 1,]).flat(),
     // Right face
     ...Array(6).fill([0, 0, 1,]).flat(),
 
 ];
 
-var cube_normals = [];
+const cube_normals = [];
 
 function compute_normals(vertices, normals) {
 
@@ -132,9 +132,10 @@ compute_normals(cube_vertices, cube_normals);
 //---------------------------
 // definition of the sphere
 //---------------------------
-var sphere_vertices = [];
-var sphere_colors = [];
-var sphere_normals = [];
+const sphere_vertices = [];
+const sphere_colors = [];
+const sphere_normals = [];
+
 function create_sphere() {
     let step = 0.01;
     for (let u = 0; u < 1; u = u + step) {
