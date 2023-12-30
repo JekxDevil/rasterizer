@@ -186,7 +186,7 @@ var terrain_vertices = [];
 // The total number of triangles is approx. (2.0/step)^2.
 // Setting the value of step to sth smaller than 0.001 is not practical very practical.
 function create_terrain(){
-    let step = 0.01;
+    let step = 0.001;
     for(let x = -0.5; x < 0.5; x = x + step){
         for(let z = -0.5; z < 0.5; z = z + step){
             //vertices of a quad

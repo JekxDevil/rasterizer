@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -8,181 +9,10 @@
     <script type="text/javascript">
 
         // -------------Shaders for the terrain rendering----------------
-        var vertexTerrainShaderCode =
-            `#version 300 es
-                in vec3 a_position;
-                in vec3 a_uv;
-
-                uniform float bias;
-                uniform float scale;
-                uniform float waterLevel;
-                uniform mat4 viewMatrix;
-                uniform mat4 modelMatrix;
-                uniform mat4 projectionMatrix;
-                uniform vec3 viewDirection;
-                uniform vec3 lightDirection;
-                uniform sampler2D displacementMap;
-
-                out vec2 v_uv;
-                out float v_height;
-                out float v_waterLevel;
-                out vec3 v_normal;
-                out vec3 v_lightDirection;
-                out vec3 v_viewDirection;
-
-                void main() {
-                v_waterLevel = waterLevel;
-                v_uv = vec2(a_uv.x - 0.5, a_uv.z - 0.5);
-
-                float displacement = bias + scale * texture(displacementMap, v_uv).x;
-                vec3 new_vertex = a_position + displacement * vec3(0.0, 1.0, 0.0);
-
-                v_height = smoothstep(0.0, 1.0, texture(displacementMap, v_uv).x);
-
-                vec2 texel_size = 1.0 / vec2(textureSize(displacementMap, 0));
-
-                float height_up = texture(displacementMap, vec2(v_uv.x, v_uv.y + texel_size.y)).x;
-                float height_right = texture(displacementMap, vec2(v_uv.x + texel_size.x, v_uv.y)).x;
-
-                float disp_up = bias + scale * height_up;
-                float disp_right = bias + scale * height_right;
-
-                vec3 up = vec3(a_position.x, disp_up, a_position.z + texel_size.y);
-                vec3 right = vec3(a_position.x + texel_size.x, disp_right, a_position.z);
-
-                if (v_height <= v_waterLevel) {
-                    v_normal = vec3(0.0, 1.0, 0.0);
-                } else {
-                    v_normal = normalize(cross(up - new_vertex, right - new_vertex));
-                }
-
-                v_normal = vec3(viewMatrix * modelMatrix * vec4(v_normal, 0.0));
-                v_lightDirection = vec3(viewMatrix * vec4(lightDirection, 0.0));
-                v_viewDirection = -vec3(viewMatrix * modelMatrix * vec4(a_position, 1.0));
-
-                gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(new_vertex, 1.0);
-                }`;
-
-        var fragmentTerrainShaderCode =
-            `#version 300 es
-                precision highp float;
-
-                in vec2 v_uv;
-                in vec3 v_normal;
-                in vec3 v_viewDirection;
-                in vec3 v_lightDirection;
-                in float v_waterLevel;
-                in float v_height;
-
-                uniform sampler2D waterSampler;
-                uniform sampler2D sandSampler;
-                uniform sampler2D grassSampler;
-                uniform sampler2D rockSampler;
-                uniform sampler2D snowSampler;
-
-                const vec3 ambientCoefficient = vec3(0.1);
-                const vec3 diffuseCoefficient = vec3(0.5);
-                const vec3 specularCoefficient = vec3(0.0);
-                const float shininess = 50.0;
-
-                out vec4 out_color;
-
-                void main() {
-                float smoothstep_c;
-
-                float sandHeight = v_waterLevel + 10.0 / 1000.0;
-                float grassHeight = sandHeight + 20.0 / 1000.0;
-                float rockHeight = grassHeight + 80.0 / 1000.0;
-                float snowHeigth = rockHeight + 200.0 / 1000.0;
-
-                if (v_height < v_waterLevel) {
-                    smoothstep_c = smoothstep(0.0, sandHeight, v_height);
-                    out_color = (1.0 - smoothstep_c) * texture(waterSampler, v_uv * vec2(25.0)) + smoothstep_c * texture(sandSampler, v_uv * vec2(25.0));
-                } else if (v_height < sandHeight) {
-                    smoothstep_c = smoothstep(sandHeight, grassHeight, v_height);
-                    out_color = (1.0 - smoothstep_c) * texture(sandSampler, v_uv * vec2(25.0)) + smoothstep_c * texture(grassSampler, v_uv * vec2(25.0));
-                } else if (v_height < grassHeight) {
-                    smoothstep_c = smoothstep(grassHeight, rockHeight, v_height);
-                    out_color = (1.0 - smoothstep_c) * texture(grassSampler, v_uv * vec2(25.0)) + smoothstep_c * texture(rockSampler, v_uv * vec2(25.0));
-                } else if (v_height < rockHeight) {
-                    smoothstep_c = smoothstep(rockHeight, snowHeigth, v_height);
-                    out_color = (1.0 - smoothstep_c) * texture(rockSampler, v_uv * vec2(25.0)) + smoothstep_c * texture(snowSampler, v_uv * vec2(25.0));
-                } else {
-                    out_color = texture(snowSampler, v_uv * vec2(25.0));
-                }
-
-                vec3 normal = normalize(v_normal);
-                vec3 viewDirection = normalize(v_viewDirection);
-                vec3 lightDirection = normalize(v_lightDirection);
-                vec3 reflectedDirection = normalize(reflect(-lightDirection, normal));
-
-                vec3 ambient = ambientCoefficient * vec3(out_color);
-                vec3 diffuse = diffuseCoefficient * clamp(dot(lightDirection, normal), 0.0, 1.0) * vec3(out_color);
-                vec3 specular = specularCoefficient * pow(clamp(dot(reflectedDirection, viewDirection), 0.0, 1.0), shininess);
-                vec3 color = ambient + diffuse + specular;
-
-                vec3 gamma_correction = pow(color, vec3(1.0 / 1.8));
-
-                out_color = vec4(gamma_correction, 1.0);
-
-                }`;
-
-        var vertexShaderCode =
-            `#version 300 es
-                in vec3 a_position;
-                in vec3 a_color;
-                in vec3 a_normal;
-
-                out vec3 v_color;
-                out vec3 v_normal;
-                out vec3 v_lightDirection;
-                out vec3 v_viewDirection;
-
-                uniform mat4 modelMatrix;
-                uniform mat4 viewMatrix;
-                uniform mat4 projectionMatrix;
-                uniform vec3 lightDirection;
-
-                void main(){
-                    v_color = a_color;
-                    v_normal = vec3(viewMatrix * modelMatrix * vec4(a_normal,0.0));
-                    v_lightDirection = vec3(viewMatrix * vec4(lightDirection, 0.0));
-                    v_viewDirection  = -vec3(viewMatrix * modelMatrix * vec4(a_position,1.0)); // in the eye space the camera is in (0,0,0)!
-                    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(a_position,1.0);
-                }`;
-        var fragmentShaderCode =
-            `#version 300 es
-                precision highp float;
-
-                in vec3 v_color;
-                in vec3 v_viewDirection;
-                in vec3 v_normal;
-                in vec3 v_lightDirection;
-
-                const vec3 lightColor = vec3(1.0,1.0,1.0);
-                const float ambientCoeff = 0.05;
-                const float diffuseCoeff = 0.5;
-                const float specularCoeff = 0.5;
-                const float shininessCoeff = 50.0;
-
-                const float gamma = 1.8;
-
-                out vec4 out_color;
-                void main(){
-
-                    vec3 V = normalize(v_viewDirection);
-                    vec3 N = normalize(v_normal);
-                    vec3 L = normalize(v_lightDirection.xyz);
-                    vec3 R = normalize(reflect(-L,N));
-
-                    vec3 ambient = ambientCoeff * v_color;
-                    vec3 diffuse = vec3(diffuseCoeff) * lightColor * v_color * vec3(max(dot(N,L), 0.0));
-                    vec3 specular = vec3(specularCoeff) * vec3(pow(max(dot(R,V), 0.0), shininessCoeff));
-
-                    vec3 color = ambient + diffuse + specular;
-                    color = pow(color,vec3(1.0/gamma));
-                    out_color = vec4(color, 1.0);
-                }`;
+        var vertexTerrainShaderCode = null;
+        var fragmentTerrainShaderCode = null;
+        var vertexShaderCode = null;
+        var fragmentShaderCode =  null;
 
 
         var gl; // WebGL context
@@ -360,7 +190,6 @@
             gl.useProgram(terrainShaderProgram);
 
 
-
             let tScale = gl.getUniformLocation(terrainShaderProgram, "scale");
 
             let tViewMatrixLocation = gl.getUniformLocation(
@@ -419,7 +248,9 @@
             gl.bindVertexArray(terrain_vao);
             gl.drawArrays(gl.TRIANGLES, 0, terrain_vertices.length / 3);
 
-            window.requestAnimationFrame(function () { draw(); });
+            window.requestAnimationFrame(function () {
+                draw();
+            });
         }
 
         // The function below creates textures and sets default parameters
@@ -434,8 +265,8 @@
                 gl.generateMipmap(gl.TEXTURE_2D);
             }
         }
-        function start() {
 
+        function start() {
             initWebGL();
             createGLSLPrograms();
             createTextures(); // creating textures on GPU
@@ -457,7 +288,7 @@
             "../data/snow/baseColor.jpg",
         ];
         // textureVariables should contain the names of uniforms in the shader program
-        // IMPORTAN: if you are going to use the code we provide,
+        // IMPORTANT: if you are going to use the code we provide,
         // make sure the names below are identical to the one you use in the shader program
         var textureVariables = [
             "waterSampler",
@@ -466,6 +297,7 @@
             "rockSampler",
             "snowSampler",
         ];
+
         function count_down() {
             leftToRead = leftToRead - 1;
             if (leftToRead == 0) {
@@ -473,7 +305,11 @@
             }
         }
 
-        function main() {
+        async function main() {
+            vertexTerrainShaderCode = await (await fetch('glsl/shader-terrain.vert')).text();
+            fragmentTerrainShaderCode = await (await fetch('glsl/shader-terrain.frag')).text();
+            vertexShaderCode = await (await fetch('glsl/shader.vert')).text();
+            fragmentShaderCode = await (await fetch('glsl/shader.frag')).text();
 
             // Loading the textures
             leftToRead = textureFiles.length;
@@ -490,33 +326,40 @@
         }
 
     </script>
+    <title>Assignment 10</title>
 </head>
 
 <body onload="main();">
-    <canvas id="webgl-canvas" width="768" height="768"></canvas>
-    <div style="float: right">
-        <h4>Camera:</h4>
-        <div class="slidecontainer">
-            Azimuthal angle:</br><input type="range" min="-270" max="90" value="-45" id="camera_azimuthal_angle">
-        </div>
-        <div class="slidecontainer">
-            Polar angle:</br><input type="range" min="1" max="179" value="60" id="camera_polar_angle">
-        </div>
-        <div class="slidecontainer">
-            Distance:</br><input type="range" min="0" max="200" value="20" id="camera_distance">
-        </div>
-        <div class="slidecontainer">
-            Field of view:</br><input type="range" min="10" max="150" value="45" id="camera_fov">
-        </div>
-
-        <h4>Light:</h4>
-        <div class="slidecontainer">
-            Azimuthal angle:</br><input type="range" min="-270" max="90" value="-70" id="light_azimuthal_angle">
-        </div>
-        <div class="slidecontainer">
-            Polar angle:</br><input type="range" min="1" max="90" value="60" id="light_polar_angle">
-        </div>
+<canvas id="webgl-canvas" width="768" height="768"></canvas>
+<div style="float: right">
+    <h4>Camera:</h4>
+    <div class="slide-container">
+        <label for="camera_azimuthal_angle">Azimuthal angle:<br/></label>
+        <input type="range" min="-270" max="90" value="-45" id="camera_azimuthal_angle">
     </div>
+    <div class="slide-container">
+        <label for="camera_polar_angle">Polar angle:<br/></label>
+        <input type="range" min="1" max="179" value="60" id="camera_polar_angle">
+    </div>
+    <div class="slide-container">
+        <label for="camera_distance">Distance:<br/></label>
+        <input type="range" min="0" max="200" value="20" id="camera_distance">
+    </div>
+    <div class="slide-container">
+        <label for="camera_fov">Field of view:<br/></label>
+        <input type="range" min="10" max="150" value="45" id="camera_fov">
+    </div>
+
+    <h4>Light:</h4>
+    <div class="slide-container">
+        <label for="light_azimuthal_angle">Azimuthal angle:<br/></label>
+        <input type="range" min="-270" max="90" value="-70" id="light_azimuthal_angle">
+    </div>
+    <div class="slide-container">
+        <label for="light_polar_angle">Polar angle:<br/></label>
+        <input type="range" min="1" max="90" value="60" id="light_polar_angle">
+    </div>
+</div>
 </body>
 
 </html>
